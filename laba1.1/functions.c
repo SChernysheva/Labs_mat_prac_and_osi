@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <limits.h>
 
 
 
@@ -26,14 +27,11 @@ int flagP(int num) {
     return 0;
 }
 
-int flagA(int num){
+long long int flagA(int num){
     if(num<0) {
         return -1;
     }
-    int res=0;
-    for (int i=1; i<=num; i++){
-        res+=i;
-    }
+    long long int res=((num+1)*num)/2;
     return res;
 }
 
@@ -53,11 +51,25 @@ void flagE(int stepen, float mas[][stepen]){
 }
 
 int fact(int num) {
+    if (num>17) return -1;
     return (num<2) ? 1 : num*fact(num-1);
 }
 
+int isInInt(const char*s){
+    if (strlen(s)>10) return 0;
+    if (strlen(s)==10 && s[0]!='1' && s[0]!='2') return 0;
+    if (strlen(s)==10 && s[0]=='2' && s[1]!='1' && s[1]!='0') return 0;
+    if (strlen(s)==10 && s[0]=='2' && s[1]=='1'){
+        for (int i=2; i<=9; i++){
+            if (s[i]!='0') return 0;
+        }
+    }
+    return 1;
+}
 
-int Atoi(const char*s){ //Ручная реализация функции атои
+
+int Atoi(const char*s){ //Ручная реализация функции атои + проверка на переполнение
+    if (isInInt(s)==0) return 0;
     int res=0;
     int i=0;
     if(s[0]=='-') i=1; // если число отрицательно - пропускаем минус, добавим в конце
