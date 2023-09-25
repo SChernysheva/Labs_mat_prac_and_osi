@@ -64,6 +64,7 @@ void getAnswersT(float mas[][3], int count, float masAnswers[][3], float eps) //
 
 
         float d=getDiscr(mas[i][0], mas[i][1], mas[i][2]);
+        printf("%f\n", d);
         if ((0+d)<-eps) 
         {
             masAnswers[i][0]=0; 
@@ -75,80 +76,31 @@ void getAnswersT(float mas[][3], int count, float masAnswers[][3], float eps) //
     }
 }
 
-void getPermutations(float mas[][3], float num1, float num2, float num3, int count, float eps)
-{
-    if (count==1) 
+void swap(float mas[], int i1, int i2){
+    float temp=mas[i1]; 
+    mas[i1]=mas[i2]; 
+    mas[i2]=temp;
+    return;
+}
+
+void getPermutations(float masA[][3], float mas[], int*i, int k){ //Алгоритм Хипа, масА- массив для ответов, мас-массив с элементами, i - указатель для записи ответов, k - элемент из алгоса
+    if (k==1) 
     {
-        mas[0][0]=num1;
-        mas[0][1]=num2;
-        mas[0][2]=num3;
+        masA[*i][0]=mas[0];
+        masA[*i][1]=mas[1];
+        masA[*i][2]=mas[2];
+        (*i)++;
         return;
     }
-    if (count==3)
-    {
-        if (isEqual(num1, num2, eps)) //делаем расстановку когда первые два числа в массиве - равны, третье будем перемещать по индексам
-        {
-            mas[0][0]=num1;
-            mas[0][1]=num2;
-            mas[0][2]=num3;
+    for (int m=0; m<k; m++){
+        getPermutations(masA, mas, i, k-1);
+        if (k%2==0){
+            swap(mas, m, k-1);
         }
-        if (isEqual(num2,num3, eps))
-        {
-            mas[0][0]=num2;
-            mas[0][1]=num3;
-            mas[0][2]=num1;
-        }
-        if (isEqual(num1, num3, eps))
-        {
-            mas[0][0]=num1;
-            mas[0][1]=num3;
-            mas[0][2]=num2;
-        }
-        for (int i=1; i<3; i++)
-        {
-            if (i==1) 
-            {
-                mas[i][0]=mas[i-1][0];
-                mas[i][1]=mas[i-1][2];
-                mas[i][2]=mas[i][0];
-            }
-            if (i==2)
-            {
-                mas[i][0]=mas[i-1][1];
-                mas[i][1]=mas[i-1][0];
-                mas[i][2]=mas[i-1][2];
-            }
-        }
+        else swap(mas, 0, k-1);
     }
-    if (count==6)
-    {
-        mas[0][0]=num1;
-        mas[0][1]=num2;
-        mas[0][2]=num3;
-        for (int i=1; i<6; i++)
-        {
-            if(i==4) 
-            {
-                mas[i][0]=mas[i-1][1];
-                mas[i][1]=mas[i-1][2];
-                mas[i][2]=mas[i-1][0];
-            }
-            else if(i%2!=0)
-            {
-                mas[i][0]=mas[i-1][0];
-                mas[i][1]=mas[i-1][2];
-                mas[i][2]=mas[i-1][1];
-            }
-            else 
-            {
-                mas[i][0]=mas[i-1][2];
-                mas[i][1]=mas[i-1][0];
-                mas[i][2]=mas[i-1][1];
-            }
-        }
-    }
-
 }
+
 
 int isNubmer(const char*s){ //проверка нет ли посторонних символов в числе  
     int i = 0;
@@ -168,10 +120,10 @@ int flagM(int num1, int num2)
 
 int flagT(float a, float b, float c, float eps)
 {
-    float res1=b*b+c*c;
-    float res2=a*a+c*c;
-    float res3=b*b+a*a;
-    if ((fabs(a*a-res1)<eps) || (fabs(b*b-res2)<eps) || (fabs(c*c-res3)<eps)) return 1;
+    float res1=a*a;
+    float res2=b*b;
+    float res3=c*c;
+    if ((fabs(res1-(res2+res3))<eps) || (fabs(res2-(res1+res3)<eps) || (fabs(res3-(res1+res2))<eps))) return 1;
     return 0;
 }
 
@@ -225,8 +177,12 @@ int main(int argc, char*argv[])
         if (isEqual(num1, num2, eps) && isEqual(num2, num3, eps)) countPerest=1;
         else if (isEqual(num1, num2, eps) || isEqual(num1, num3, eps) || isEqual(num2, num3, eps)) countPerest=3;
         else countPerest=6;
+        int i=0;
+        int*iptr=&i;
         float mas[countPerest][3]; //массив всевозможных перестановок
-        getPermutations(mas, num1, num2, num3, countPerest, eps);
+        float m[3]={num1, num2, num3};
+        getPermutations(mas, m, iptr, 3);
+        //getPermutations(mas, num1, num2, num3, countPerest, eps);
         float masAnswers[countPerest][3]; //массив ответов, 0 индекс - кол-во ответов
         getAnswersT(mas, countPerest, masAnswers, eps);
 
