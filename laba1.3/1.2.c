@@ -83,7 +83,7 @@ void swap(float mas[], int i1, int i2){
     return;
 }
 
-void getPermutations(float masA[][3], float mas[], int*i, int k){ //Алгоритм Хипа, масА- массив для ответов, мас-массив с элементами, i - указатель для записи ответов, k - элемент из алгоса
+void getPermutations(float masA[][3], float mas[], int*i, int k){ //Алгоритм Хипа, масА- массив для ответов, мас-массив с элементами, i - указатель для записи ответов, k - кол-во элементов
     if (k==1) 
     {
         masA[*i][0]=mas[0];
