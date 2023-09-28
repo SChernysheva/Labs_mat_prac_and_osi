@@ -4,7 +4,6 @@
 #include <math.h>
 #include <ctype.h>
 #include <limits.h>
-
 int getLen(int num){
     int len=0;
     while(num!=0){
@@ -74,16 +73,20 @@ int main(int argc, char*argv[])
             printf("Возможные флаги: -d, -i, -s, -a \n");
             return 0;
         }
-        char fout[strlen(argv[2])+5+3];
-        for (int i=0; argv[2][i]!='.'; i++){ 
-            fout[i]=argv[2][i];
+        char *fout=malloc((size_t)strlen("_out")+(size_t)(strlen(argv[2])+(size_t)strlen(".txt")+1));
+        if (!fout) {
+            printf("Не удалось создать файл результата1.\n");
+            return 0;
         }
-        strcat(fout, "_out.txt"); 
+        memcpy(fout, argv[2], strlen(argv[2]));
+        memcpy(fout+strlen(argv[2]), "_out.txt", 8);
+        fout[8+strlen(argv[2])]='\0';
         if(!(out = fopen(fout, "w"))) 
         {
             printf("Не удалось создать файл результата.\n");
             return 0;
         }
+        free(fout);
     }
 
     int indexF=1;
@@ -199,13 +202,8 @@ int main(int argc, char*argv[])
             else fputc(c, out);
         }
     }
-
-
-
-
-
-
-
+    fclose(in);
+    fclose(out);
 
 return 0;
 }
