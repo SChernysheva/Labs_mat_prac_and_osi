@@ -110,7 +110,7 @@
         double s1 = 0;
         double s2 = eps+10;
 
-        while(fabs(s2 - s1) > eps){
+        while(abs(s2) - abs(s1) > eps){
             if(n == 0){
                 s1 = 1;
                 n++;
@@ -134,7 +134,7 @@
                 n++;
             }
         }
-        if (abs(s2) - abs(s1)<= eps) {
+        if (abs(s2) - abs(s1) <= eps) {
             return s2;
         }
     }
