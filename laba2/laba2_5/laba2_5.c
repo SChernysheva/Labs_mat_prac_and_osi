@@ -17,10 +17,10 @@ int main()
     overfprintf(file, "I want%%%d %n %.00000001f", 55, &x, 0.10000001);
     char mas[150];
     oversprintf(mas, "I want%%%d", 55);
-    //printf("I want%%%d %n", 55, &x);
     printf("%d\n", x);
     printf("%s", mas);
     printf("\n");
+    fclose(file);
     return 0;
 }
 
