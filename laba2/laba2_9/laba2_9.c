@@ -86,5 +86,6 @@ int main()
         (mas[i].ans == 1) ? printf("определено\n") : printf("не определено\n");
         i++;
     }
+    free(mas);
     return 0;
 }
