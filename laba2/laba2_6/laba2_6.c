@@ -10,7 +10,11 @@
 int main()
 {
     FILE* file;
-    file = fopen("test.txt", "r");
+    if (!(file = fopen("test.txt", "r")))
+    {
+        printf("Не удалось открыть файл\n");
+        return 0;
+    }
     int rim;
     int num;
     float s;
@@ -21,8 +25,7 @@ int main()
     char str[10];
     char mas[150];
     //sprintf(mas, "%s", "255 XL %% 0.1000001 allala");
-    //sscanf(mas, "%d %f %s", &num, &s, str);
     overfscanf(file, "%d %Ro %Zr %% %f %s", &num, &num2, &num1, &s, str);
-    //printf("%d\n", overfscanf(file, "%Ro %d:%f:%Cv %Cv %Zr %s", &rim,  &num, &s, &res, 16, &num1, 37, &num2, str));
     printf("%d %d %d %f %s\n", num, num2, num1, s, str);
+    fclose(file);
 }
