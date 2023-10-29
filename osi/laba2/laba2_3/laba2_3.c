@@ -7,10 +7,11 @@
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/sem.h>
+#include <time.h>
 
-#define COUNT_PHIL 5
+
+#define COUNT_PHIL 4
 #define KEY 1234
-struct sembuf sem_op;
 int sem_id;
 
 void awayForks(int phil)
@@ -38,7 +39,7 @@ void doPhil(int phil)
             if (semop(sem_id, &sem_lock_right, 1) == 0)
             {
                 printf("Философ %d ест\n", phil + 1);
-                sleep(1);
+                sleep(rand() % 3);
                 awayForks(phil);
                 success = 1;
             }
@@ -46,12 +47,12 @@ void doPhil(int phil)
             {
                 semop(sem_id, &sem_unlock_left, 1);
                 printf("Философ %d думает\n", phil + 1);
-                sleep(2);
+                sleep(rand() % 3);
             }
         }
         else{
             printf("Философ %d думает\n", phil + 1);
-            sleep(2); 
+            sleep(rand() % 3); 
         }
     }
     printf("Философ %d думает\n", phil + 1);
@@ -60,6 +61,8 @@ void doPhil(int phil)
 
 int main()
 {
+
+    srand(time(NULL));
     pid_t philos[COUNT_PHIL];
     sem_id = semget(KEY, COUNT_PHIL, 0666 | IPC_CREAT);
     for (int i = 0; i < COUNT_PHIL; i++) // вилки
