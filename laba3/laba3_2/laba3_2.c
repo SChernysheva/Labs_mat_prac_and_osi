@@ -71,7 +71,7 @@ enum checker matrix(double* res, vector vec, int dimension)
     //printf("%f\n", *res);
     return OK;
 }
-enum checker my_foo(double (*res)[2], int* size, int dimension, int p, enum checker (*foo1)(double*, vector, int), enum checker (*foo2)(double*, vector, int, int), enum checker (*foo3)(double*, vector, int), int count, ...)
+enum checker my_foo(double* res, vector* res_v, int dimension, int p, enum checker (*foo1)(double*, vector, int), enum checker (*foo2)(double*, vector, int, int), enum checker (*foo3)(double*, vector, int), int count, ...)
 {
     //*size = count;
     va_list(vecs);
@@ -91,18 +91,21 @@ enum checker my_foo(double (*res)[2], int* size, int dimension, int p, enum chec
         {
             if (res_[m] > maxs[m]) 
             {
-                //printf("%f\n", res_[m]);
                 maxs[m] = res_[m];  
-                res[m][0] = i; //номер вектора
-                //printf("aa %f\n", (*res)[m][0]);  
-                //printf("%d\n", m);
-                res[m][1] = maxs[m]; //само число(ответ)
+                res_v[m] = vec; //вектор 
+                res[m] = maxs[m]; //само число(ответ)
             }
-            //printf("%i, %d, %f\n", i, m, res[m][1]);
         }
     }
-    //printf("%f %f %f\n", (*res)[0][1], (*res)[1][1], (*res)[2][1]);
     return OK;
+}
+void print_vec(vector vec, int dimension)
+{
+    for (int i = 0; i < dimension; i++)
+    {
+        printf("%f ", vec.coord[i]);
+    }
+    printf("\n");
 }
 int main()
 {
@@ -111,7 +114,7 @@ int main()
 
     vector vec1;
     vec1.coord = (double*)malloc(sizeof(double) * dimension);
-    vec1.coord[0] = 0.0;
+    vec1.coord[0] = 0.1;
     vec1.coord[1] = 0.5;
     vec1.coord[2] = 3.2;
 
@@ -121,12 +124,22 @@ int main()
     vec2.coord[1] = 2.5;
     vec2.coord[2] = 3.2;
 
-    double res[3][2];                      
+    vector vec3;
+    vec3.coord = (double*)malloc(sizeof(double) * dimension);
+    vec3.coord[0] = 0.5;
+    vec3.coord[1] = 2.5;
+    vec3.coord[2] = 3.0;
+
+    double res[3];   
+    vector res_v[3];                   
     int count;
-    my_foo(res, &count, dimension, p, get_max_len, chebyshev_norm, matrix, 2, vec1, vec2);
+    my_foo(res, res_v, dimension, p, get_max_len, chebyshev_norm, matrix, 3, vec1, vec2, vec3);
+
     for (int i = 0; i < 3; i++)
     {
-        printf("Для нормы номер %d самый длинный переданный вектор %d и его значение %lf\n", i + 1, (int)res[i][0], res[i][1]);
+        printf("Для нормы номер %d самый длинный переданный вектор:\n", i + 1);
+        print_vec(res_v[i], dimension);
+        printf("и его значение %lf\n", res[i]);
     }
     free(vec1.coord);
     free(vec2.coord);
