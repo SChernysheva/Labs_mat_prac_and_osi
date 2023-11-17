@@ -571,7 +571,7 @@ int main() {
             stack = new_stack;
         }
         printf("Введите команду:");
-        printf("ADD чтобы добавить жителя, DEL для удаления, UPDATE для изменения, UNDO для отмены последнего действия и exit для выхода\n");
+        printf("ADD чтобы добавить жителя, DEL для удаления, UPDATE для изменения, UNDO для отмены последнего действия, print - вывод текущей базы и exit для выхода\n");
         scanf("%s", user_str);
         if (strcmp(user_str, "print") == 0)
         {
