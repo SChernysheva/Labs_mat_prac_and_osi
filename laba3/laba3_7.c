@@ -178,46 +178,40 @@ void destroyStack(Stack* stack) {
         delete_str(stack->stackArray[i]->surname);
         delete_str(stack->stackArray[i]->patronymic);
         delete_str(stack->stackArray[i]->gender);
-        printf("%d str ok\n", i);
-        if (stack->stackArray[i]->flag == DELETE && stack->stackArray[i]->liver != NULL)
+        if ( stack->stackArray[i]->flag == DELETE && stack->stackArray[i]->liver != NULL)
         {
-            printf("in liver str\n");
             delete_str(stack->stackArray[i]->liver->surname);
             delete_str(stack->stackArray[i]->liver->name);
             delete_str(stack->stackArray[i]->liver->patronymic);
             delete_str(stack->stackArray[i]->liver->gender);
-            printf("%d liver str ok\n", i);
             free(stack->stackArray[i]->liver);
             stack->stackArray[i]->liver = NULL;
         }
-        printf("%d liver ok\n", i);
         free(stack->stackArray[i]);
     }
-    printf("stack top ok\n");
     for (int i = stack->top + 1; i < stack->capacity; i++)
     {
         if (stack->stackArray[i] != NULL) free(stack->stackArray[i]);
     }
-    printf("stack capasity ok\n");
     free(stack->stackArray);
     stack->stackArray = NULL;
     free(stack);
     stack = NULL;
 }
 
-Stack* createStackWithCopy(Stack* oldStack, int n) {
-    int newSize = oldStack->capacity + 1;
-    Stack* newStack = createStack(oldStack->capacity + 1);
+// Stack* createStackWithCopy(Stack* oldStack, int n) {
+//     int newSize = oldStack->capacity + 1;
+//     Stack* newStack = createStack(oldStack->capacity + 1);
 
-    int startIndex = oldStack->top - n/2 - 1;
-    if (startIndex < 0) startIndex = 0;
+//     int startIndex = oldStack->top - n/2 - 1;
+//     if (startIndex < 0) startIndex = 0;
 
-    for (int i = startIndex; i < oldStack->top; i++) {
-        push(newStack, oldStack->stackArray[i]);
-    }
-    newStack->top = oldStack->top;
-    return newStack;
-}
+//     for (int i = startIndex; i < oldStack->top; i++) {
+//         push(newStack, oldStack->stackArray[i]);
+//     }
+//     newStack->top = oldStack->top;
+//     return newStack;
+// }
 
 Liver* createLiver(char* surname, char* name, char* patronymic, int birthDay, int birthMonth, int birthYear, char* gender, float income) {
     Liver* liver = (Liver*)malloc(sizeof(Liver));
@@ -295,7 +289,6 @@ void insertLiver(Liver** head, Liver* newLiver) {
 void deleteLiver(Liver** head, const char* surname, const char* name) {
     Liver* current = *head;
     Liver* previous = NULL;
-    printf("%s %s\n", surname, name);
     while (current != NULL) {
         if (strcmp(current->surname->str, surname) == 0 && strcmp(current->name->str, name) == 0) {
             if (previous == NULL) {
@@ -410,7 +403,6 @@ void undo(Stack* stack, Liver** head)
 {
     int index;
     data* info = pop(stack, &index);
-    printf("%d\n", info->flag);
     if (info->flag == ADD)
     {
         Liver* lived_adding = info->liver;
@@ -463,6 +455,49 @@ void undo(Stack* stack, Liver** head)
     stack->stackArray[index] = NULL;
     info = NULL;
 }
+void copy_value_new_stack(Stack* new_stack, data* value)
+{
+    data* info = (data*)malloc(sizeof(data));
+    if (!info)
+    {
+        info = NULL;
+        return;
+    }
+    info->flag = value->flag;
+    info->what_was_change = value->what_was_change;
+    info->birthDay = value->birthDay;
+    info->birthMonth = value->birthMonth;
+    info->birthYear = value->birthYear;
+    if (value->gender != NULL)
+    {
+        info->gender = make_string(value->gender->str);
+    }
+    if (value->name != NULL)
+    {
+        info->name = make_string(value->name->str);
+    }
+    if (value->surname != NULL)
+    {
+        info->surname = make_string(info->surname->str);
+    }
+    if (value->patronymic != NULL)
+    {
+        info->patronymic = make_string(info->patronymic->str);
+    }
+    if (value->flag == CHANGE || value->flag == ADD)
+    {
+        info->liver = value->liver;
+    }
+    if (value->flag == DELETE && value->liver != NULL)
+    {
+        info->liver = createLiver(value->liver->surname->str, value->liver->name->str, value->liver->patronymic->str, value->liver->birthDay, value->liver->birthMonth, value->liver->birthYear, value->liver->gender->str, value->liver->income);
+    }
+    else
+    {
+        info->liver = info->liver;
+    }
+    push(new_stack, info);
+}
 
 
 int main() {
@@ -502,18 +537,18 @@ int main() {
         Liver* newLiver = createLiver(surname, name, patronymic, birthDay, birthMonth, birthYear, gender, income);
         insertLiver(&head, newLiver);
     }
-    int capasity = 10;
+    int capasity = 3;
     Stack* stack = createStack(capasity);
     char user_str[10];
     int count_undo = 0;
     int count_op = 0;
     while(strcmp(user_str, "exit") != 0)
     {
-        //if (count_op % 2 == 0 && strcmp(user_str, "UNDO") != 0 && count_undo > 0) count_undo--;
-        printf("op: %d, undo: %d %d\n", count_op, count_undo, stack->top);
-        if (stack->top >= capasity)
+        //printf("op: %d, undo: %d %d\n", count_op, count_undo, stack->top);
+        if (stack->top + 1 >= capasity)
         {
             Stack* new_stack = createStack(stack->capacity * 2);
+            capasity *= 2;
             if (new_stack == NULL)
             {
                 printf("Нехватка памяти\n");
@@ -523,17 +558,15 @@ int main() {
                 return 0;
             }
             int start = stack->top - (count_op / 2) - 1;
-            printf("%d\n", start);
             if (start < 0)
             {
                 start = 0;
             }
-
-            for (int i = start; i < stack->top; i++)
+            for (int i = start; i <= stack->top; i++)
             {
-                push(new_stack, stack->stackArray[i]);
+                copy_value_new_stack(new_stack, stack->stackArray[i]);
             }
-            new_stack->top = stack->top - start;
+            //new_stack->top = stack->top;
             destroyStack(stack);
             stack = new_stack;
         }
