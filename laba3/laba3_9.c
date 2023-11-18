@@ -38,7 +38,9 @@ Node* createNode_forTree(char* word, int count)
     new_node->word = (char*)malloc(sizeof(char) * strlen(word));
     if (!new_node->word)
     {
-        //
+        free(new_node->word);
+        free(new_node);
+        return NULL;
     }
     strcpy(new_node->word, word);
     new_node->left = NULL;
@@ -46,38 +48,56 @@ Node* createNode_forTree(char* word, int count)
     return new_node;
 }
 
-void saveTreeToFile(Node* root, FILE* file) {
+void saveTreeToFile(Node* root, FILE* file, char separator, int level) {
+    for (int i = 0; i < level; i++)
+    {
+        fprintf(file, " ");
+    }
     if (root == NULL) {
-        fprintf(file, "NULL 0\n");
+        fprintf(file, "NULL%c0\n", separator);
     } else {
-        fprintf(file, "%s %d\n", root->word, root->count);
-        saveTreeToFile(root->left, file);
-        saveTreeToFile(root->right, file);
+        fprintf(file, "%s%c%d\n", root->word, separator, root->count);
+        saveTreeToFile(root->left, file, separator, level + 3);
+        saveTreeToFile(root->right, file, separator, level + 3);
     }
 }
-Node* load_tree_from_file(FILE* file)
+Node* load_tree_from_file(FILE* file, char separator)
 {
     char word[100];
     int count;
-    fscanf(file, "%s %d\n", word, &count);
-    if (strlen(word) == 0)
+    int i = 0;
+    char c = fgetc(file);
+    while (isspace(c))
     {
-        return NULL;
+        c = fgetc(file);
     }
+    if (c == separator)
+    {
+        word[0] = ' ';
+        word[1] = '\0';
+    }
+    while (c != separator)
+    {
+        word[i] = c;
+        i++;
+        c = fgetc(file);
+    }
+    word[i] = '\0';
+    fscanf(file, "%d\n", &count);
     if (strcmp(word, "NULL") == 0)
     {
         return NULL;
     }
     Node* newNode = createNode_forTree(word, count); 
-    newNode->left = load_tree_from_file(file);
-    newNode->right = load_tree_from_file(file);
+    newNode->left = load_tree_from_file(file, separator);
+    newNode->right = load_tree_from_file(file, separator);
     return newNode;
     
 }
 void destroy_tree(Node* current)
 {
     if (current == NULL) return;
-    if (current->word != NULL) free(current->word);
+    free(current->word);
     destroy_tree(current->left);
     destroy_tree(current->right);
     free(current);
@@ -97,6 +117,7 @@ void insert(Node** root, char* word)
             if (strcmp(word, current->word) == 0)
             {
                 (current->count)++;
+                free(word);
                 flag = 1;
             }
             else if (strcmp(word, current->word) < 0)
@@ -313,8 +334,14 @@ int main(int argc, char*argv[])
     }
     for (int i = 2; i < argc; i++)
     {
+        if (strlen(argv[i]) > 3)
+        {
+            free(separator);
+            fclose(in);
+            printf("Длина одного из переданных аргументов > 1 => не символ\n");
+        }
         separator[i - 2] = argv[i][0];
-    }
+    } 
     Node* root = NULL;
     char line[1000];
     int count_words = 0;
@@ -329,6 +356,7 @@ int main(int argc, char*argv[])
             count_words++;
         }
     }
+    char my_sep = separator[0];
     free(separator);
 
     char user_str[2];
@@ -403,7 +431,7 @@ int main(int argc, char*argv[])
             else
             {
 
-                saveTreeToFile(root, for_save);
+                saveTreeToFile(root, for_save, my_sep, 0);
                 printf("Готово\n");
                 fclose(for_save);
             }
@@ -420,7 +448,7 @@ int main(int argc, char*argv[])
             }
             else
             {
-                Node* root_save = load_tree_from_file(for_read);
+                Node* root_save = load_tree_from_file(for_read, my_sep);
                 printf("Вот что удалось прочитать:\n");
                 if (root_save == NULL)
                 {
