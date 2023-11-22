@@ -321,7 +321,17 @@ enum checker change_size_of_table(hashtable** table, int new_size)
     *table = new_table;
     return OK;
 }
-
+int isPrime(int n) {
+    if (n <= 1) {
+        return 0;
+    }
+    for (int i = 2; i * i <= n; i++) {
+        if (n % i == 0) {
+            return 0;
+        }
+    }
+    return 1;
+}
 int main(int argc, char*argv[])
 {
     if (argc < 2)
@@ -346,18 +356,20 @@ int main(int argc, char*argv[])
         return 1;
      }
     int waiting_count = 0;
-    print_h_t(my_table);
-    if (check(my_table, &waiting_count) != _OK)
+    //print_h_t(my_table);
+    while (check(my_table, &waiting_count) != _OK)
     {
         int new_size = (int)(waiting_count * 2);
+        while (!isPrime(new_size)) new_size++;
         printf("%d\n", new_size);
         if (change_size_of_table(&my_table, new_size) != OK)
         {
-
+            printf("Ошибка\n");
+            free_table(my_table);
+            return 1;
         }
-
     }
-    print_h_t(my_table);
+    //print_h_t(my_table);
     if (do_define_v3(my_table, in) != OK)
     {
         printf("Ошибка\n");
