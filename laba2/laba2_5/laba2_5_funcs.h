@@ -7,11 +7,9 @@
 #include <stdarg.h>
 #include "laba2_5_flags.h"
 
-void overfprintf(FILE *file, const char *format, ...);
-void oversprintf(char *buf, const char *format, ...);
-
-void overfprintf(FILE *file, const char *format, ...)
+int overfprintf(FILE *file, const char *format, ...)
 {
+    int countArgs = 0;
     va_list args;
     va_start(args, format);
     int i = 0;
@@ -124,9 +122,11 @@ void overfprintf(FILE *file, const char *format, ...)
             i = g;
         }
     }
+    countArgs = ftell(file) - 1;
+    return countArgs;
 }
 
-void oversprintf(char *buf, const char *format, ...)
+int oversprintf(char *buf, const char *format, ...)
 {
     va_list args;
     va_start(args, format);
@@ -251,5 +251,5 @@ void oversprintf(char *buf, const char *format, ...)
         }
     }
     buf[indexBuf] = '\0';
-    return;
+    return indexBuf;
 }
