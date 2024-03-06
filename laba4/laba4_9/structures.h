@@ -15,13 +15,22 @@ enum answer
     INVALID
 };
 typedef struct Application {
-    char time_app[5];
+    char time_app[20];
     int prior;
     char ident[4];
     int ident_app;
     char* text;
 } application;
 
+typedef struct Timee
+{
+    int year;
+    int mounth;
+    int day;
+    int hour;
+    int min;
+    int second;
+} my_time;
 typedef struct operatorr
 {
     int time_process;
@@ -41,33 +50,6 @@ typedef struct OTD
     double coeff_load; //коэф загруженности
 }otd;
 
-typedef struct DepartmentArray {
-    int capacity;
-    int size;
-    char** keys;
-    otd** values; 
-    otd* least_load;
-} DepartmentArray;
-
-typedef struct node_BST {
-    char* key;
-    otd* otdd;
-    struct node_BST *left;
-    struct node_BST *right;
-    otd* least_load;
-} node_BST;
-
-typedef struct Node {
-    application* data;
-    int degree;
-    struct Node* child;
-    struct Node* sibling;
-    struct Node* parent;
-} node;
-
-typedef struct BinomialHeap {
-    node* head;
-} binomial_heap;
 
 enum heap
 {
@@ -77,6 +59,7 @@ enum heap
     SKEW,
     LEFTIST,
     TREAP
+
 };
 enum storage
 {
@@ -85,6 +68,15 @@ enum storage
     BST,
     TRIE
 };
+enum code 
+{
+    NEW_REQUEST,
+    REQUEST_HANDLING_STARTED,
+    REQUEST_HANDLING_FINISHED,
+    DEPARTMENT_OVERLOADED,
+
+};
+
 void free_application(application* app)
 {
     if (!app) return;
@@ -93,6 +85,14 @@ void free_application(application* app)
     app = NULL;
 }
 
+typedef struct LogMessage
+{
+    enum code eCode;
+    char* ident_otd;
+    int ident_app;
+    char* name_op;
+    int time_treatment;
+} log_msg;
 
 // void printt(DepartmentArray* da) //просто тестф для себя
 // {

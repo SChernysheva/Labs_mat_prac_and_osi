@@ -5,46 +5,99 @@
 #include <ctype.h>
 #include "BinaryHeap.c"
 #include "BinomialHeap.c"
-#include "dynamicArray.c"
+#include "DynamicArray.c"
 #include "structures.h"
 #include "FibonacciHeap.c"
 #include "BST.c"
-#include "treap.c"
+#include "Treap.c"
 #include "SkewHeap.c"
+#include "HashSet.c"
+#include "LeftistHeap.c"
+#include "control_time.c"
 #define EPS 0.1e17
-//binomial, heaps, storages, ident_all    check free, enums
-//все точно ок с binaryHeap, fibonacciHeap, ARRAY, BST
+// trie(2), ident_all(3) + merge_destr(4) + find_max (5)
+
+void log_(FILE* file, log_msg* msg, int* seek, my_time* tm)
+{
+
+    fprint_time(file, tm, seek);
+
+    fseek(file, *seek, SEEK_SET);
+    switch(msg->eCode)
+    {
+    case NEW_REQUEST:
+    *seek += fprintf(file, "%s", "[NEW_REQUEST]: ");
+    *seek += fprintf(file, "Поступление заявки, идентификатор отделения - %s, идентификатор заявки: %d\n", msg->ident_otd, msg->ident_app);
+
+    break;
+    
+    case REQUEST_HANDLING_STARTED:
+    *seek += fprintf(file, "%s", "[REQUEST_HANDLING_STARTED]: ");
+    *seek += fprintf(file, "Начало обработки заявки. Идентификатор заявки - %d, оператор - %s\n", msg->ident_app, msg->name_op);
+    break;
+
+    case REQUEST_HANDLING_FINISHED:
+    *seek += fprintf(file, "%s", "[REQUEST_HANDLING_FINISHED]: ");
+    *seek += fprintf(file, "Закончена обработка заявки. Идентификатор %d, оператор %s, время выполнения - %d мин\n", msg->ident_app, msg->name_op, msg->time_treatment);
+    break;
+
+    case DEPARTMENT_OVERLOADED:
+    *seek += fprintf(file, "%s", "[DEPARTMENT_OVERLOADED] ");
+    *seek += fprintf(file, "Отделение %s перегружено. Перегрузка произошла после заявки с идентифкатором %d. ", msg->ident_otd, msg->ident_app);
+    if (msg->name_op)
+    {
+        *seek += fprintf(file, "Отделение %s передало свои заявки отделению %s\n", msg->ident_otd, msg->name_op);
+    }
+    else *seek += fprintf(file, "Отделение %s не может передать заявки никакому отделению\n", msg->ident_otd);
+    break;
+
+    default: break;
+    }
+    free(msg);
+}
 enum answer read_app(FILE* file, otd* otds, void* storage, enum heap eHeap, enum storage eStorage, 
-                        int* count_apps, double coeff, enum answer (*insertHeap)(void*, application* app), void (*meld_heaps)(void*, void*), otd** least_load, char* ident_ll)
-{//void (*meld_heaps)()
+                        int* seek, double coeff, enum answer (*insertHeap)(void*, application* app), void (*meld_heaps)(void*, void*), otd** least_load, char* ident_ll,
+                         FILE* file_log, my_time* tm)
+{
+    //printf("ok\n");
     application* app = (application*)malloc(sizeof(application));
     if (!app)
     {
-        //todo
+        return ERROR_MEMORY;
     }
-    fscanf(file, "%s %d %s", app->time_app, &(app->prior), app->ident);
+    //[2024-03-06T11:04:41]
+    if (tm->day == -1) 
+    {
+        fscanf(file, "%d-%d-%dT%d:%d:%d", &tm->year, &tm->mounth, &tm->day, &tm->hour, &tm->min, &tm->second);
+    }
+    else fscanf(file, "%s", app->time_app);
+    fscanf(file, "%d %s",  &(app->prior), app->ident);
+    app->ident[3] = '\0';
     app->text = malloc(sizeof(char) * 256);
     if (!app->text)
     {
         return ERROR_MEMORY;
     }
     fgets(app->text, 256, file);
-    app->ident_app = *count_apps; //идентифкатор заявки - ее номер по счету
-    (*count_apps)++; //это общий счетчик заявок, нужен только для идентифкатора заявки
+    app->ident_app = *seek; //идентифкатор заявки - ее номер по счету
+    //(*count_apps)++; //это общий счетчик заявок, нужен только для идентифкатора заявки
     void* stor;
     otd* otdd;
     if (eStorage == ARRAY)
     {
         DepartmentArray* stor = (DepartmentArray*)storage;
-        otdd = searchDepartmentArray(storage, app->ident);
+        otdd = search_department_array(storage, app->ident);
     }
     else if (eStorage == BST)
     {
         node_BST* stor = (node_BST*)storage;
-        //printf("%s\n", stor->key);
         otdd = search_BST(stor, app->ident);
     }
-        //otd *otdd = searchOtd(storage, app->ident);  нужны функции insertHeap, meld
+    else if (eStorage == HASHSET)
+    {
+        hashtable* stor = (hashtable*)storage;
+        otdd = searchMacro(stor, app->ident);
+    }
 
         void* heap = otdd->heap;
         if (!heap)
@@ -53,33 +106,47 @@ enum answer read_app(FILE* file, otd* otds, void* storage, enum heap eHeap, enum
         }
         if (insertHeap(heap, app) != ERROR_MEMORY)
         {
-            printf("Поступление заявки, идентификатор отделения - %s, время поступления: %s, идентификатор заявки: %d\n", app->ident, app->time_app, app->ident_app);
+            //printf("Поступление заявки, идентификатор отделения - %s, время поступления: %s, идентификатор заявки: %d\n", app->ident, app->time_app, app->ident_app);
+            log_msg *msg = malloc(sizeof(log_msg));
+            if (!msg)
+                return ERROR_MEMORY;
+            msg->eCode = NEW_REQUEST;
+            msg->ident_otd = app->ident;
+            msg->ident_app = app->ident_app;
+            log_(file_log, msg, seek, tm);
         }
+        else return ERROR_MEMORY;
         otdd->count_real_apps++;
         otdd->count_free_apps++;
         if (otdd->count_op != 0) otdd->coeff_load = (double)otdd->count_real_apps / (double)otdd->count_op; //сразу считаем(пересчитываем) коеф загруженности
         if (!(*least_load)) //если еще нет отделения с самой низкой загруженностью - делаем его
         {
             *least_load = otdd;
-            ident_ll = app->ident;
-            printf("мин отд %f %s\n", (*least_load)->coeff_load, ident_ll);
+            ident_ll = &(app->ident[0]);
+            //printf("мин отд %f %s\n", (*least_load)->coeff_load, ident_ll);
         }
         else
         { //иначе сравниваем кефы и если что меняем указатель
             if (otdd->coeff_load < (*least_load)->coeff_load) 
             {
                 *least_load = otdd;
-                ident_ll = app->ident;
+                ident_ll = &(app->ident[0]);
             }
         }
         if (otdd->coeff_load >= coeff) 
         {
             otdd->isOverload = 1;
-            printf("Отделение %s перегружено. Перегрузка произошла после заявки с идентифкатором %d\n", app->ident, app->ident_app);
+            //printf("Отделение %s перегружено. Перегрузка произошла после заявки с идентифкатором %d\n", app->ident, app->ident_app);
+            log_msg *msg = malloc(sizeof(log_msg));
+            if (!msg)
+                return ERROR_MEMORY;
+            msg->eCode = DEPARTMENT_OVERLOADED;
+            msg->ident_otd = app->ident;
+            msg->ident_app = app->ident_app;
             if (*least_load && *least_load != otdd)
             {
                 meld_heaps((*least_load)->heap, otdd->heap);
-                printf("Отделение %s передало заявки отделению %s.\n", app->ident, ident_ll);
+                msg->name_op = &(ident_ll[0]);
                 otdd->coeff_load = 0; 
                 (*least_load)->count_free_apps += otdd->count_free_apps;
                 (*least_load)->count_real_apps += otdd->count_real_apps;
@@ -89,7 +156,10 @@ enum answer read_app(FILE* file, otd* otds, void* storage, enum heap eHeap, enum
                 //передать заявления 
                 //пересчитать кэф
             }
+            else msg->name_op = NULL;
+            log_(file_log, msg, seek, tm);
         }
+        return OK;
 }
 void read_from_file(FILE* file, enum heap* eHeap, enum storage* eStorage) //читаю из файла какая будет куча и храилище
 {
@@ -110,18 +180,20 @@ void read_from_file(FILE* file, enum heap* eHeap, enum storage* eStorage) //чи
     if (strcmp(storage, "DynamicArray") == 0) *eStorage = ARRAY;
     if (strcmp(storage, "BinarySearchTree") == 0) *eStorage = BST;
     if (strcmp(storage, "Trie") == 0) *eStorage = TRIE;
+
+    
 }
-void process_apps(void* stor, enum heap eHeap, otd* otds, int count_otd, int max_time_app, double overload_coeff)
+enum answer process_apps(void* stor, enum heap eHeap, otd* otds, int count_otd, int max_time_app, double overload_coeff, FILE* file_log, int* seek, my_time* tm)
 {
     application* (*extract_max)(void*);
     switch (eHeap)
     {
         case BINARY:
-        extract_max = &extractMaxBinaryHeap;
+        extract_max = &extract_max_binary_heap;
         break;
 
         case BINOMIAL:
-        extract_max = &extractMaxBinomial;
+        extract_max = &extract_max_binomial;
         break;
 
         case FIBONACCI:
@@ -130,6 +202,10 @@ void process_apps(void* stor, enum heap eHeap, otd* otds, int count_otd, int max
 
         case SKEW:
         extract_max = &extract_max_skew;
+        break;
+
+        case LEFTIST:
+        extract_max = &extract_max_leftist;
         break;
     }
     int iter = 0;
@@ -147,8 +223,15 @@ void process_apps(void* stor, enum heap eHeap, otd* otds, int count_otd, int max
                     //printf("отделение %d  оператор номер %d\n", i, op);
                     if (otds[i].operators[op].app && otds[i].operators[op].time_process <= iter - otds[i].operators[op].start_time)
                     { // если оператор был занят и закончил
-                        printf("Закончена обработка заявки. Идентификатор %d, оператор %s, время выполнения - %d мин\n",
-                               otds[i].operators[op].app->ident_app, otds[i].operators[op].name, otds[i].operators[op].time_process);
+                        log_msg* msg = malloc(sizeof(log_msg));
+                        if (!msg) return ERROR_MEMORY;
+                        msg->eCode = REQUEST_HANDLING_FINISHED;
+                        msg->ident_app =  otds[i].operators[op].app->ident_app;
+                        msg->name_op = &(otds[i].operators[op].name[0]);
+                        msg->time_treatment = otds[i].operators[op].time_process;
+                        log_(file_log, msg, seek, tm);
+                        // printf("Закончена обработка заявки. Идентификатор %d, оператор %s, время выполнения - %d мин\n",
+                        //        otds[i].operators[op].app->ident_app, otds[i].operators[op].name, otds[i].operators[op].time_process);
                         otds[i].count_real_apps--;
                         if (otds[i].count_real_apps == 0)
                         {
@@ -165,11 +248,19 @@ void process_apps(void* stor, enum heap eHeap, otd* otds, int count_otd, int max
                         application *app;
                         if (otds[i].count_free_apps > 0)
                         { // если есть еще заявления
-                            app = extract_max(otds[i].heap);
+                        app = extract_max(otds[i].heap);
                             otds[i].count_free_apps--;
                             otds[i].operators[op].app = app;
                             otds[i].operators[op].start_time = iter;
-                            printf("Начало обработки заявки. Идентификатор заявки - %d, оператор - %s\n", app->ident_app, otds[i].operators[op].name);
+                            // printf("Начало обработки заявки. Идентификатор заявки - %d, оператор - %s, приоритет : %d\n",
+                            //      app->ident_app, otds[i].operators[op].name, app->prior);
+                            log_msg *msg = malloc(sizeof(log_msg));
+                            if (!msg)
+                                return ERROR_MEMORY;
+                            msg->eCode = REQUEST_HANDLING_STARTED;
+                            msg->ident_app = otds[i].operators[op].app->ident_app;
+                            msg->name_op = &(otds[i].operators[op].name[0]);
+                            log_(file_log, msg, seek, tm);
                         }
                         else if (otds[i].count_real_apps == 0)
                         {
@@ -177,15 +268,14 @@ void process_apps(void* stor, enum heap eHeap, otd* otds, int count_otd, int max
                             {
                                 success += 1;
                                 otds[i].isOverload = -1;
-                                printf("+1\n");
                             }
                         }
                     }
-                    //else {printf("оператор %s работает\n", otds[i].operators[op].name);}
-                    iter += 1;
+
                 }
             }
-            else iter += 1;
+            iter += 1;
+            add_time(tm);
         }
     }
     
@@ -195,10 +285,13 @@ void free_storage(enum storage eStor, void* storage, void (*free_heap)(void*, in
     switch(eStor)
     {
         case ARRAY:
-        freeDepartmentArray(storage, free_heap);
+        free_department_array(storage, free_heap);
         break;
         case BST:
         free_BST(storage, free_heap);
+        break;
+        case HASHSET:
+        free_table(storage, free_heap);
         break;
         default: break;
     }
@@ -227,7 +320,6 @@ enum answer do_heaps(otd* otds, int count, enum heap eHeap, int min_time, int ma
             {
                 free(otds[i].operators);
             }
-            //free heap foo 
             return ERROR_MEMORY;
            }
         }
@@ -236,15 +328,14 @@ void* do_storage(FILE* file, otd* otds, int count, enum storage eStorage) //со
 {
     if (eStorage == ARRAY)
     {
-        DepartmentArray* da = createDepartmentArray(count);
+        DepartmentArray* da = create_department_array(count);
         for (int i = 0; i < count; i++)
         {
             char* ident_key = malloc(sizeof(char) * 4);
-            //todo!!
+            if (!ident_key) return NULL;
             fscanf(file, "%s", ident_key);
-            ident_key[4] = '/0';
-            insertDepartmentArray(da, ident_key, &(otds[i]));
-            //(otds[i].count_apps)++;
+            ident_key[4] = '\0';
+            insert_department_array(da, ident_key, &(otds[i]));
             
         }
         return da;
@@ -255,7 +346,7 @@ void* do_storage(FILE* file, otd* otds, int count, enum storage eStorage) //со
         for (int i = 0; i < count; i++)
         {
             char* ident_key = malloc(sizeof(char) * 3);
-            //todo!!
+            if (!ident_key) return NULL;
             fscanf(file, "%s", ident_key);
             if (!bst)  
             {
@@ -264,6 +355,18 @@ void* do_storage(FILE* file, otd* otds, int count, enum storage eStorage) //со
             else insert_BST(bst, ident_key, &(otds[i]));
         }
         return bst;
+    }
+    else if (eStorage == HASHSET)
+    {
+        hashtable* table = create_hash_table();
+        for (int i = 0; i < count; i++)
+        {
+            char* ident_key = malloc(sizeof(char) * 3);
+            if (!ident_key) return NULL;
+            fscanf(file, "%s", ident_key);
+            insertMacro(table, ident_key, &(otds[i]));
+        }
+        return table;
     }
 }
 
@@ -281,14 +384,30 @@ int main(int argc, char *argv[])
         printf("%s\n", "Не удалось открыть входной файл\n");
         return 1;
     }
+    FILE* file_log = fopen("log.txt", "w");
     enum heap eHeap;
     enum storage eStorage;
-    char start[19], end[19];
+    my_time* start = (my_time*)malloc(sizeof(my_time));
+    if (!start) 
+    {
+        fclose(file1);
+        printf("Ошибка в выделении памяти\n");
+        return 0;
+    }
+    my_time* end = (my_time*)malloc(sizeof(my_time));
+    if (!end)
+    {
+        fclose(file1);
+        printf("Ошибка в выделении памяти\n");
+        return 0;
+    }
     int min_time, max_time, count;
     double overload_coeff;
     otd* otds;
     read_from_file(file1, &eHeap, &eStorage);
-    fscanf(file1, "%s %s %d %d %d", start, end, &min_time, &max_time, &count);
+    fscanf(file1, "%d-%d-%dT%d:%d:%d", &start->year, &start->mounth, &start->day, &start->hour, &start->min, &start->second);
+    fscanf(file1, "%d-%d-%dT%d:%d:%d", &end->year, &end->mounth, &end->day, &end->hour, &end->min, &end->second);
+    fscanf(file1, "%d %d %d", &min_time, &max_time, &count);
     otds = (otd*)malloc(sizeof(otd) * count);
     if (!otds)
     {
@@ -308,8 +427,8 @@ int main(int argc, char *argv[])
     switch (eHeap)
     {
         case BINARY:
-        do_heaps(otds, count, eHeap, min_time, max_time,  (void* (*) (void)) &createBinaryHeap);
-        foo_insert = &insertBinaryHeap;
+        do_heaps(otds, count, eHeap, min_time, max_time,  (void* (*) (void)) &create_binary_heap);
+        foo_insert = &insert_binary_heap;
         free_heap = &free_binary_heap;
         meld = &mergeBinaryHeapsWithoutDestruction;
         break;
@@ -317,7 +436,8 @@ int main(int argc, char *argv[])
         do_heaps(otds, count, eHeap, min_time, max_time, (void* (*) (void)) &createBinomaialHeap);
         foo_insert = &insertBinomialHeap;
         free_heap = &freeHeapBinomial;
-        //meld
+        meld = &mergeHeaps_without_destr;
+        break;
         case FIBONACCI:
         do_heaps(otds, count, eHeap, min_time, max_time, (void* (*) (void)) &make_fib_heap);
         foo_insert = &fib_heap_insert;
@@ -325,39 +445,52 @@ int main(int argc, char *argv[])
         meld = &fib_heap_merge_without_destr;
         break;
         case TREAP:
-        do_heaps(otds, count, eHeap, min_time, max_time, (void* (*) (void)) &createTreapNode);
+        do_heaps(otds, count, eHeap, min_time, max_time, (void* (*) (void)) &create_treap_node);
         foo_insert = &insert_treap;
         free_heap = &free_treap;
         meld = &merge_treap_without_destr;
         break;
         case SKEW:
-        do_heaps(otds, count, eHeap, min_time, max_time, (void* (*) (void)) &create_skew);
+        do_heaps(otds, count, eHeap, min_time, max_time, (void* (*) (void)) &create_skew_root);
         foo_insert = &insert_skew;
         meld = &merge_skew;
         free_heap = &free_skew;
+        break;
+        case LEFTIST:
+        do_heaps(otds, count, eHeap, min_time, max_time, (void* (*) (void)) &create_leftist_root);
+        foo_insert = &insert_leftist;
+        meld = &merge_leftist;
+        free_heap = &free_left;
+        break;
+
     }
     void* stor = do_storage(file1, otds, count, eStorage);
     fscanf(file1, "%lf", &overload_coeff);
     fclose(file1);
-    //сейчас имеем хранилище в котором пары идентификатор - отделение, дальше надо обработать заявки 
-    //в каждом отделении есть массив чаров на кол-во оператров у каждого из которых свое имя (буква)
-    //инфа о хранилище(stor) и отделениях(otds) в енамах eHeap, eStorage
-    int i = 3, count_apps = 1;
+    int i = 3, seek = 0;
     FILE* file;
     otd* least_load = NULL;
     char* ident_ll;
     while(file = fopen(argv[i], "r"))
     {
-        read_app(file, otds, stor, eHeap, eStorage, &count_apps, overload_coeff, foo_insert, meld, &least_load, ident_ll);
+        if (read_app(file, otds, stor, eHeap, eStorage, &seek, overload_coeff, foo_insert, meld, &least_load, ident_ll, file_log, start) != OK)
+        {
+            printf("Ошибка выделения памяти\n");
+            fclose(file);
+            free(start);
+            free(end);
+            free_storage(eStorage, stor, free_heap);
+            free(otds);
+            return 0;
+        }
         i++;
         fclose(file);
     }
-    process_apps(stor, eHeap, otds, count, max_time, overload_coeff);
-
-    //чистка:
-    //вызваать чистку в хранилище(она почистит еще и кучи и операторов)
+    process_apps(stor, eHeap, otds, count, max_time, overload_coeff, file_log, &seek, start);
     free_storage(eStorage, stor, free_heap);
-    //почистить память под отделения(просто массив почистить)
+    fclose(file_log);
+    free(start);
+    free(end);
     free(otds);
     return 0;
 }

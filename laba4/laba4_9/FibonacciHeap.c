@@ -162,13 +162,13 @@ void unionLists(fib_heap_node* first, fib_heap_node* second) {
     secondPrev->right = firstNext;
 }
 
-void consolidate(fib_heap* heap) {
+enum answer consolidate(fib_heap* heap) {
     if (heap == NULL || heap->max == NULL) {
-        return;
+        return INVALID;
     }
     int MAXDEGREE = log2(heap->num_nodes);
     fib_heap_node** A = (fib_heap_node**)malloc(sizeof(fib_heap_node*) * MAXDEGREE); // Массив для хранения узлов по их степеням
-    //todo
+    if (!*A) return ERROR_MEMORY;
     for (int i = 0; i < MAXDEGREE; i++) {
         A[i] = NULL;
     }

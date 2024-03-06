@@ -11,7 +11,7 @@ typedef struct BinaryHeap {
     int size;
 } binary_heap;
 
-binary_heap* createBinaryHeap() {
+binary_heap* create_binary_heap() {
     binary_heap* bh = (binary_heap*)malloc(sizeof(binary_heap));
     if (!bh)
     {
@@ -32,9 +32,6 @@ void swap(application** arr, int index1, int index2) {
     application* temp = arr[index1];
     arr[index1] = arr[index2];
     arr[index2] = temp;
-    // application temp = *a;
-    // *a = *b;
-    // *b = temp;
 }
 void heapifyUp(binary_heap* bh, int index) {
     int parent = (index - 1) / 2;
@@ -46,7 +43,7 @@ void heapifyUp(binary_heap* bh, int index) {
         parent = (index - 1) / 2;
     }
 }
-enum answer insertBinaryHeap(binary_heap* bh, application* app) {
+enum answer insert_binary_heap(binary_heap* bh, application* app) {
     if (bh->size == bh->capacity) {
         bh->capacity *= 2;
         bh->arr = (application**)realloc(bh->arr, bh->capacity * sizeof(application*));
@@ -81,7 +78,7 @@ void heapifyDown(binary_heap* bh, int index) {
 }
 
 
-application* extractMaxBinaryHeap(binary_heap* bh) {
+application* extract_max_binary_heap(binary_heap* bh) {
     if (bh->size <= 0) {
         exit(1);
     }
@@ -91,7 +88,7 @@ application* extractMaxBinaryHeap(binary_heap* bh) {
     heapifyDown(bh, 0);
     return max_app;
 }
-application* FindMaxBinaryHeap(binary_heap* bh) {
+application* find_max_binary_heap(binary_heap* bh) {
     if (bh->size <= 0) {
         exit(1);
     }
@@ -109,16 +106,17 @@ void free_binary_heap(binary_heap* heap, int isFull)
 }
 void mergeBinaryHeapsWithoutDestruction(binary_heap* heap1, binary_heap* heap2) {
     while(heap2->size > 0) {
-        insertBinaryHeap(heap1, extractMaxBinaryHeap(heap2));
+        insert_binary_heap(heap1, extract_max_binary_heap(heap2));
     }
 }
 void mergeHeapsWithDestruction(binary_heap* heap1, binary_heap* heap2) {
     // Объединение элементов в одну кучу (heap1)
     for (int i = 0; i < heap2->size; i++) {
-        insertBinaryHeap(heap1, heap2->arr[i]);
+        insert_binary_heap(heap1, heap2->arr[i]);
     }
     
     // Удаление памяти для второй кучи (heap2) 
     free(heap2->arr);
     free(heap2);
+    heap2 = NULL;
 }

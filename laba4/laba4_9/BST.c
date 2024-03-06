@@ -6,11 +6,19 @@
 #include "structures.h"
 
 
+typedef struct node_BST {
+    char* key;
+    otd* otdd;
+    struct node_BST *left;
+    struct node_BST *right;
+    otd* least_load;
+} node_BST;
+
 node_BST *createnode_BST(char* key, otd* otdd) {
     node_BST *newnode_BST = (node_BST*)malloc(sizeof(node_BST));
     if (!newnode_BST)
     {
-        //todo
+        return NULL;
     }
     newnode_BST->key = key;
     newnode_BST->otdd = otdd;
