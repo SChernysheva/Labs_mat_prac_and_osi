@@ -46,7 +46,7 @@ void freeNode(node* node, int isFull) {
     freeNode(node->child, isFull);
 
     freeNode(node->sibling, isFull);
-    if(isFull) free(node->data);
+    if (node->data) free_application(node->data);
     free(node);
 }
 
@@ -135,49 +135,6 @@ void mergeHeaps_without_destr(binomial_heap* heap1, binomial_heap* heap2)
     heap2->head = NULL;
 }
 
-// application* extractMaxBinomial(binomial_heap* H) {
-//     int max = 0;
-//     node* x = NULL;
-//     node* xBefore = NULL;
-//     node* curx = H->head;
-//     node* curxBefore = NULL;
-
-//     while (curx) {
-//         if (curx->data->prior > max) {
-//             max = curx->data->prior;
-//             x = curx;
-//             xBefore = curxBefore;
-//         }
-//         curxBefore = curx;
-//         curx = curx->sibling;
-//     }
-
-//     if (!x) {
-//         printf("max node not found\n");
-//         return NULL;
-//     }
-
-//     if (!xBefore) {
-//         H->head = x->sibling;
-//     } else {
-//         xBefore->sibling = x->sibling;
-//     }
-
-//     binomial_heap* Hdash = createBinomaialHeap();
-//     Hdash->head = x->child;
-
-//     curx = Hdash->head;
-//     while (curx) {
-//         curx->parent = NULL;
-//         curx = curx->sibling;
-//     }
-
-//     mergeHeaps_without_destr(H, Hdash);
-//     free(Hdash);
-//     application* app = x->data;
-//     free(x);
-//     return app;
-// }
 application* extract_max_binomial(binomial_heap* H) {
     if (H == NULL || H->head == NULL) {
         printf("Heap is empty\n");
@@ -224,7 +181,11 @@ application* extract_max_binomial(binomial_heap* H) {
 
     return extractedData;
 }
-
+application* find_max_binomial(binomial_heap* sr) 
+{
+    if (!sr) return NULL;
+    return sr->head->data;
+}
 enum answer insertBinomialHeap(binomial_heap* bh, application* data) {
     node* newNode = createNode(data);
     bh->head = mergeHeaps_without_destr_in(bh->head, newNode); // Выполняем слияние куч

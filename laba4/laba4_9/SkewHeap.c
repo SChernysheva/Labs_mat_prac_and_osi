@@ -78,7 +78,11 @@ application* extract_max_skew(skew_root* sr) {
     
     return maxApp;
 }
-
+application* find_max_skew(skew_root* sr) 
+{
+    if (!sr) return NULL;
+    return sr->root->app;
+}
 skew_root* insert_skew(skew_root* sr, application* newApp) {
     skew_heap* newHeap = create_skew_node(newApp);
     newHeap->app = newApp;
@@ -97,6 +101,44 @@ void free_skew(skew_heap* root, int isFull)
         return;
 
     free_skew(root->left, isFull);
-    free_skew(root->right, isFull);    
+    free_skew(root->right, isFull);  
+    if (root->app) free_application(root->app);  
     free(root);
+}
+
+
+skew_heap* merge_and_destroy_helper_s(skew_heap* h1, skew_heap* h2)
+{
+    if (h1 == NULL)
+    {
+        free(h2);
+        return NULL;
+    }
+    if (h2 == NULL)
+    {
+        free(h1);
+        return NULL;
+    }
+
+    if (  (h1->app->prior > h2->app->prior) 
+    ||( (h1->app->prior == h2->app->prior)  &&  (strcmp(h1->app->time_app, h2->app->time_app) < 0)))
+    {
+        skew_heap* temp = h1;
+        h1 = h2;
+        h2 = temp;
+    }
+
+    skew_heap* temp = merge_and_destroy_helper_s(h1->right, h2);
+    h1->right = h1->left;
+    h1->left = temp;
+
+    free(h2);
+
+    return h1;
+}
+
+void merge_destroy_skew(skew_root* root1, skew_root* root2)
+{
+    root1->root = merge_and_destroy_helper_s(root1->root, root2->root);
+    root2->root = NULL;
 }

@@ -82,15 +82,15 @@ void free_node_fib_helper(fib_heap_node *node, int isFull) {
             child = next;
         } while (child != temp);
     }
-    //if (node->app) free_application(node->app);
-     //free(node);
+    if (node->app) free_application(node->app);
+    free(node);
 }
 
 void free_fib_heap(fib_heap* heap, int isFull) {
     if (heap == NULL) {
         return;
     }
-    //free_node_fib_helper(heap->max, isFull);
+    free_node_fib_helper(heap->max, isFull);
     free(heap);
 }
 void fib_heap_merge_without_destr(fib_heap* H1, fib_heap* H2) {
@@ -168,7 +168,7 @@ enum answer consolidate(fib_heap* heap) {
     }
     int MAXDEGREE = log2(heap->num_nodes);
     fib_heap_node** A = (fib_heap_node**)malloc(sizeof(fib_heap_node*) * MAXDEGREE); // Массив для хранения узлов по их степеням
-    if (!*A) return ERROR_MEMORY;
+    if (!A) return ERROR_MEMORY;
     for (int i = 0; i < MAXDEGREE; i++) {
         A[i] = NULL;
     }

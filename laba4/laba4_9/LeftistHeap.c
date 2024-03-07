@@ -93,11 +93,54 @@ application* extract_max_leftist(leftist_root* root) {
     return app;
 }
 
+
+leftist_heap* merge_and_destroy_helper_l(leftist_heap* h1, leftist_heap* h2)
+{
+    if (h1 == NULL)
+    {
+        free(h2);
+        return NULL;
+    }
+    if (h2 == NULL)
+    {
+        free(h1);
+        return NULL;
+    }
+
+    if (  (h1->app->prior < h2->app->prior)   
+        || (h1->app->prior == h2->app->prior)  &&  (strcmp(h1->app->time_app, h2->app->time_app) < 0) )
+    {
+        leftist_heap* temp = h1;
+        h1 = h2;
+        h2 = temp;
+    }
+
+    leftist_heap* temp = merge_and_destroy_helper_l(h1->right, h2);
+    h1->right = h1->left;
+    h1->left = temp;
+
+    free(h2);
+
+    return h1;
+}
+
+void merge_destroy_lefttist(leftist_root* root1, leftist_root* root2)
+{
+    root1->root = merge_and_destroy_helper_l(root1->root, root2->root);
+    root2->root = NULL;
+}
+
+application* find_max_leftist(leftist_root* sr) 
+{
+    if (!sr) return NULL;
+    return sr->root->app;
+}
 void free_left1(leftist_heap* root, int isFull) {
     if (root == NULL) return;
     
     free_left1(root->right, isFull);
     free_left1(root->left, isFull);
+    if (root->app) free_application(root->app);
     free(root);
 }
 void free_left(leftist_root* root, int isFull) {

@@ -46,3 +46,41 @@ void fprint_time(FILE* file, my_time* tm, int* seek)
     if (tm->second < 10) *seek += fprintf(file, "0%d", tm->second);
     else *seek += fprintf(file, "%d] ", tm->second);
 }
+
+int does_time_finish(my_time* currentTime, my_time* finishTime)
+{
+    if (currentTime->year > finishTime->year)
+        return 1;
+    else if (currentTime->year < finishTime->year)
+        return 0;
+    
+    if (currentTime->year == finishTime->year) 
+    {
+        if (currentTime->mounth > finishTime->mounth)
+            return 1;
+        else if (currentTime->mounth < finishTime->mounth)
+            return 0;
+
+        if (currentTime->day > finishTime->day)
+            return 1;
+        else if (currentTime->day < finishTime->day)
+            return 0;
+
+        if (currentTime->hour > finishTime->hour)
+            return 1;
+        else if (currentTime->hour < finishTime->hour)
+            return 0;
+
+        if (currentTime->min > finishTime->min)
+            return 1;
+        else if (currentTime->min < finishTime->min)
+            return 0;
+
+        if (currentTime->second > finishTime->second)
+            return 1;
+        else if (currentTime->second <= finishTime->second)
+            return 0;
+    }
+    
+    return 0;
+}

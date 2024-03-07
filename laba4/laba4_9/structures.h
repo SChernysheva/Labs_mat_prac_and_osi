@@ -94,24 +94,4 @@ typedef struct LogMessage
     int time_treatment;
 } log_msg;
 
-// void printt(DepartmentArray* da) //просто тестф для себя
-// {
-//     printf("%s\n", da->keys[2]);
-// }
-
-// otd* create_otd(int count_op, enum heap eHeap) //создаю отделение и кучу в нем (вроде нигдк не используется)
-// {
-//     otd* new_otd = (otd*)malloc(sizeof(otd));
-//     if (!new_otd)
-//     {
-//         //TODO
-//     }
-//     new_otd->count_op = count_op;
-//     if (eHeap == BINARY)
-//     {
-//         new_otd->heap = createBinaryHeap(10);
-//     }
-//     //TODO
-//     return new_otd;
-// }
 #endif

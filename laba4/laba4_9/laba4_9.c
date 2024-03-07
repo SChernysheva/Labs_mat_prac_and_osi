@@ -14,8 +14,9 @@
 #include "HashSet.c"
 #include "LeftistHeap.c"
 #include "control_time.c"
+#include "trie.c"
 #define EPS 0.1e17
-// trie(2), ident_all(3) + merge_destr(4) + find_max (5)
+//client-server + oopc++ + tvims + info_heaps 
 
 void log_(FILE* file, log_msg* msg, int* seek, my_time* tm)
 {
@@ -98,6 +99,11 @@ enum answer read_app(FILE* file, otd* otds, void* storage, enum heap eHeap, enum
         hashtable* stor = (hashtable*)storage;
         otdd = searchMacro(stor, app->ident);
     }
+    else if (eStorage == TRIE)
+    {
+        trie_node* stor = (trie_node*)storage;
+        otdd = search_trie(stor, app->ident);
+    }
 
         void* heap = otdd->heap;
         if (!heap)
@@ -122,15 +128,14 @@ enum answer read_app(FILE* file, otd* otds, void* storage, enum heap eHeap, enum
         if (!(*least_load)) //если еще нет отделения с самой низкой загруженностью - делаем его
         {
             *least_load = otdd;
-            ident_ll = &(app->ident[0]);
-            //printf("мин отд %f %s\n", (*least_load)->coeff_load, ident_ll);
+            strcpy(ident_ll, app->ident);
         }
         else
         { //иначе сравниваем кефы и если что меняем указатель
             if (otdd->coeff_load < (*least_load)->coeff_load) 
             {
                 *least_load = otdd;
-                ident_ll = &(app->ident[0]);
+                strcpy(ident_ll, app->ident);
             }
         }
         if (otdd->coeff_load >= coeff) 
@@ -183,7 +188,7 @@ void read_from_file(FILE* file, enum heap* eHeap, enum storage* eStorage) //чи
 
     
 }
-enum answer process_apps(void* stor, enum heap eHeap, otd* otds, int count_otd, int max_time_app, double overload_coeff, FILE* file_log, int* seek, my_time* tm)
+enum answer process_apps(void* stor, enum heap eHeap, otd* otds, int count_otd, int max_time_app, double overload_coeff, FILE* file_log, int* seek, my_time* tm, my_time* end)
 {
     application* (*extract_max)(void*);
     switch (eHeap)
@@ -215,11 +220,21 @@ enum answer process_apps(void* stor, enum heap eHeap, otd* otds, int count_otd, 
         int i = 0;
         for (i; i < count_otd; i++)
         {
+            if (does_time_finish(tm, end))
+            {
+                for (int k = i; k < count_otd; k++)
+                {
+                    for (int op = 0; op < otds[k].count_op; op++)
+                    {
+                        if (otds[k].operators[op].app) free_application(otds[k].operators[op].app);
+                    }
+                }
+                return INVALID;
+            }
             if (otds[i].isOverload != -1)
             {
                 for (int op = 0; op < otds[i].count_op; op++)
                 {
-
                     //printf("отделение %d  оператор номер %d\n", i, op);
                     if (otds[i].operators[op].app && otds[i].operators[op].time_process <= iter - otds[i].operators[op].start_time)
                     { // если оператор был занят и закончил
@@ -274,9 +289,9 @@ enum answer process_apps(void* stor, enum heap eHeap, otd* otds, int count_otd, 
 
                 }
             }
-            iter += 1;
-            add_time(tm);
         }
+        iter += 1;
+        add_time(tm);
     }
     
 }
@@ -292,6 +307,9 @@ void free_storage(enum storage eStor, void* storage, void (*free_heap)(void*, in
         break;
         case HASHSET:
         free_table(storage, free_heap);
+        break;
+        case TRIE:
+        free_trie(storage, free_heap);
         break;
         default: break;
     }
@@ -368,6 +386,18 @@ void* do_storage(FILE* file, otd* otds, int count, enum storage eStorage) //со
         }
         return table;
     }
+    else if (eStorage == TRIE)
+    {
+        trie_node* triee = create_node_trie();
+        for (int i = 0; i < count; i++)
+        {
+            char* ident_key = malloc(sizeof(char) * 3);
+            if (!ident_key) return NULL;
+            fscanf(file, "%s", ident_key);
+            insert_trie(triee, ident_key, &(otds[i]));
+        }
+        return triee;
+    }
 }
 
 int main(int argc, char *argv[])
@@ -387,13 +417,7 @@ int main(int argc, char *argv[])
     FILE* file_log = fopen("log.txt", "w");
     enum heap eHeap;
     enum storage eStorage;
-    my_time* start = (my_time*)malloc(sizeof(my_time));
-    if (!start) 
-    {
-        fclose(file1);
-        printf("Ошибка в выделении памяти\n");
-        return 0;
-    }
+    char start[19];
     my_time* end = (my_time*)malloc(sizeof(my_time));
     if (!end)
     {
@@ -405,7 +429,7 @@ int main(int argc, char *argv[])
     double overload_coeff;
     otd* otds;
     read_from_file(file1, &eHeap, &eStorage);
-    fscanf(file1, "%d-%d-%dT%d:%d:%d", &start->year, &start->mounth, &start->day, &start->hour, &start->min, &start->second);
+    fscanf(file1, "%s", start);
     fscanf(file1, "%d-%d-%dT%d:%d:%d", &end->year, &end->mounth, &end->day, &end->hour, &end->min, &end->second);
     fscanf(file1, "%d %d %d", &min_time, &max_time, &count);
     otds = (otd*)malloc(sizeof(otd) * count);
@@ -470,14 +494,36 @@ int main(int argc, char *argv[])
     int i = 3, seek = 0;
     FILE* file;
     otd* least_load = NULL;
-    char* ident_ll;
+    char* ident_ll = (char*)malloc(sizeof(char) * 4);
+    if (!ident_ll) 
+    {
+        printf("Ошибка выделения памяти\n");
+            fclose(file);
+            free(end);
+            free_storage(eStorage, stor, free_heap);
+            free(otds);
+            return 0;
+    }
+    //ident_ll = NULL;
+    my_time* curr = (my_time*)malloc(sizeof(my_time));
+    if (!curr)
+    {
+        printf("Ошибка выделения памяти\n");
+        fclose(file);
+        free(curr);
+        free(end);
+        free_storage(eStorage, stor, free_heap);
+        free(otds);
+        return 0;
+    }
+    curr->day = -1;
     while(file = fopen(argv[i], "r"))
     {
-        if (read_app(file, otds, stor, eHeap, eStorage, &seek, overload_coeff, foo_insert, meld, &least_load, ident_ll, file_log, start) != OK)
+        if (read_app(file, otds, stor, eHeap, eStorage, &seek, overload_coeff, foo_insert, meld, &least_load, ident_ll, file_log, curr) != OK)
         {
             printf("Ошибка выделения памяти\n");
             fclose(file);
-            free(start);
+            free(curr);
             free(end);
             free_storage(eStorage, stor, free_heap);
             free(otds);
@@ -486,11 +532,12 @@ int main(int argc, char *argv[])
         i++;
         fclose(file);
     }
-    process_apps(stor, eHeap, otds, count, max_time, overload_coeff, file_log, &seek, start);
+    process_apps(stor, eHeap, otds, count, max_time, overload_coeff, file_log, &seek, curr, end);
     free_storage(eStorage, stor, free_heap);
     fclose(file_log);
-    free(start);
+    free(curr);
     free(end);
     free(otds);
+    free(ident_ll);
     return 0;
 }

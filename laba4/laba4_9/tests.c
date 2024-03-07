@@ -44,6 +44,7 @@ enum answer do_apps(int count, int max_pr, int count_otd, char* arr[])
     {
         if (do_app(i, max_pr, count_otd, arr) != OK) return ERROR_MEMORY;
     }
+    return OK;
 }
 char** do_context_dialog_user(int* count)
 {
@@ -151,7 +152,7 @@ char** do_context_dialog_user(int* count)
         for (int l = 0; l < 3; l++)
         {
             //srand(time(0));
-            ident_otd[l] = 'a' + rand() % 26; // генерируем случайную букву от 'a' до 'z'
+            ident_otd[l] =(rand() % 10) + '0'; // генерируем случайную число от '0' до '9'
         }
         ident_otd[3] = '\0'; // добавляем символ конца строки
         arr[i] = (char*)malloc(4 * sizeof(char));

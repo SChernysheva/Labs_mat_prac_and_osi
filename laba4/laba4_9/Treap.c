@@ -81,6 +81,11 @@ treap_node* extract_max_treap(treap_node** root) {
     *root = erase(*root, current->app->ident_app);
     return current;
 }
+application* find_max_treap(treap_node* sr) 
+{
+    if (!sr) return NULL;
+    return sr->app;
+}
 void free_treap(treap_node* node)
 {
     if (!node) return;
@@ -88,5 +93,6 @@ void free_treap(treap_node* node)
         free_treap(node->left);
         free_treap(node->right);
     }
+    if (node->app) free_application(node->app);
     free(node);
 }
