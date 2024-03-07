@@ -16,8 +16,6 @@
 #include "control_time.c"
 #include "trie.c"
 #define EPS 0.1e17
-//client-server + oopc++ + tvims + info_heaps 
-
 void log_(FILE* file, log_msg* msg, int* seek, my_time* tm)
 {
 
