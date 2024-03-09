@@ -137,7 +137,7 @@ void mergeHeaps_without_destr(binomial_heap* heap1, binomial_heap* heap2)
 
 application* extract_max_binomial(binomial_heap* H) {
     if (H == NULL || H->head == NULL) {
-        printf("Heap is empty\n");
+    
         return NULL;
     }
 
